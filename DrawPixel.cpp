@@ -60,13 +60,26 @@ int initWsock() {
 // プログラムは WinMain から始まります
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	
-	if (DxLib_Init() == -1)		// ＤＸライブラリ初期化処理
-	{
-		return -1;			// エラーが起きたら直ちに終了
+	ChangeFont("游明朝");
+	SetFontSize(20);
+
+	int fullscrnFlg = IDNO;
+	//int fullscrnFlg = IDYES;
+	//fullscrnFlg = MessageBox(NULL, TEXT("フルスクリーンモードで起動しますか？"),
+		//TEXT("sample"), MB_YESNO | MB_ICONQUESTION);
+	if (fullscrnFlg == IDYES) {
+		ChangeWindowMode(false);
 	}
+	else
+	{
+		ChangeWindowMode(true);
+	}
+	if (DxLib_Init() == -1) { return -1; }
+	SetMouseDispFlag(false);
+
+
 	int e = initWsock();
-	DrawFormatString(10, 10, 0x33ffcc,"winsock initted : %d", e);
+	DrawFormatString(10, 10, 0x33ffcc,"winsock initialized : %d", e);
 	
 	DrawPixel(320, 240, GetColor(255, 255, 255));	// 点を打つ
 
