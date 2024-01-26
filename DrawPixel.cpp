@@ -1,3 +1,5 @@
+// https://www.geekpage.jp/programming/winsock/gethostbyname.php
+// で勉強してる
 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
@@ -58,12 +60,14 @@ int initWsock() {
 // プログラムは WinMain から始まります
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	
 	if (DxLib_Init() == -1)		// ＤＸライブラリ初期化処理
 	{
 		return -1;			// エラーが起きたら直ちに終了
 	}
-	initWsock();
-
+	int e = initWsock();
+	DrawFormatString(10, 10, 0x33ffcc,"winsock initted : %d", e);
+	
 	DrawPixel(320, 240, GetColor(255, 255, 255));	// 点を打つ
 
 	WaitKey();				// キー入力待ち
