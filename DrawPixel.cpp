@@ -1,13 +1,21 @@
 // https://www.geekpage.jp/programming/winsock/gethostbyname.php
+// https://www.oji-koji.com/?p=1092
 // で勉強してる
 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
+#include <process.h>
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 //
 #include "DxLib.h"
 #include "Libs/utils.h"
+
+typedef struct
+{
+	char    cData;
+	DWORD   dwTimer;
+}MyDataRec;
 
 
 int initWsock(SOCKET &rtnSock) {
@@ -44,6 +52,22 @@ int initWsock(SOCKET &rtnSock) {
 	return 0;
 }
 
+volatile BOOL gfStopFlag;                    // 修了を通知するためのフラッグ
+unsigned int __stdcall Func(void* pvoid) {
+	MyDataRec* pData = (MyDataRec*)pvoid;
+	unsigned int dwRet = 0;
+
+	while (!gfStopFlag)
+	{
+		printfDx(" % c\n", pData->cData);
+		Sleep(pData->dwTimer);
+	}
+	dwRet = 1200;
+	_endthreadex(dwRet);        // 返す値はこの関数に渡す
+	return(0);                  // _endthreadexを書くならここへは来ない
+
+}
+
 // プログラムは WinMain から始まります
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -75,7 +99,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int e = initWsock(s);
 	DrawFormatString(0, 0, 0x33ffcc, "winsock initialized : %d", e);
 
+
+	// ==================== thread start ====================
+	MyDataRec        MyData = { 'A', 1000 };
+	unsigned int    threadID;
+	DWORD            dwRet;
+	gfStopFlag = FALSE;
+	HANDLE hThread = (HANDLE)_beginthreadex(NULL, 0, Func, &MyData, 0, &threadID);
+
 	while (ProcessMessage() == 0) {
+		if (WaitForSingleObject(hThread, 50) == WAIT_OBJECT_0)
+		{
+			GetExitCodeThread(hThread, &dwRet);  // スレッド関数からの戻り値取得
+			//fprintf(stderr, "Thread ended.endcode: % d\n", dwRet);
+			DrawFormatString(0, 150, 0xffff, "Thread ended.endcode: % d.",dwRet);
+			ScreenFlip();
+			Sleep(1000);
+			CloseHandle(hThread);
+			break;
+		}
+
 		if (CheckKeyInput(InputHandle) != 0) { // enter が押されるまで該当ハンドルに入力受付
 			GetKeyInputString(String, InputHandle);
 			DeleteKeyInput(InputHandle);
@@ -84,6 +127,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			SetActiveKeyInput(InputHandle);
 
 
+			if (strcmp(String, "stopThread") == 0) {
+				gfStopFlag = TRUE;
+			}
 			if (strcmp(String, "exit") == 0) {
 				break;
 			}
