@@ -68,6 +68,29 @@ unsigned int __stdcall Func(void* pvoid) {
 
 }
 
+
+volatile BOOL rcvStopFlag;
+typedef struct
+{
+	SOCKET   sock;
+	char*    rBuf;
+	unsigned int len;
+}rcvDataStr;
+// 受信用スレッド
+unsigned int __stdcall rcvFunc(void* pvoid) {
+	rcvDataStr* pData = (rcvDataStr*)pvoid;
+	int n;
+	while (!rcvStopFlag) {
+		memset(pData->rBuf, 0, sizeof(pData->rBuf));
+		 n = recv(pData->sock, pData->rBuf, sizeof(pData->rBuf), 0);
+		 printfDx(pData->rBuf);
+		 Sleep(500);
+
+	}
+	_endthreadex(n);        // 返す値はこの関数に渡す
+	return(0);                  // _endthreadexを書くならここへは来ない
+
+}
 // プログラムは WinMain から始まります
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -107,6 +130,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	gfStopFlag = FALSE;
 	HANDLE hThread = (HANDLE)_beginthreadex(NULL, 0, Func, &MyData, 0, &threadID);
 
+	rcvStopFlag = FALSE;
+	rcvDataStr		myrcvData = { s, buf, sizeof(buf) };
+	HANDLE rcvFncHd = (HANDLE)_beginthreadex(NULL, 0, rcvFunc, &myrcvData, 0, &threadID);
+
 	while (ProcessMessage() == 0) {
 		if (WaitForSingleObject(hThread, 50) == WAIT_OBJECT_0)
 		{
@@ -130,6 +157,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			if (strcmp(String, "stopThread") == 0) {
 				gfStopFlag = TRUE;
 			}
+			if (strcmp(String, "stopRcv") == 0) {
+				rcvStopFlag = TRUE;
+			}
 			if (strcmp(String, "exit") == 0) {
 				break;
 			}
@@ -140,14 +170,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		//DrawKeyInputModeString(0, 0);	// 入力モードを描画
 		DrawKeyInputString(0, 25, InputHandle); 	// 入力途中の文字列を描画
 
-		memset(buf, 0, sizeof(buf)); 
-		int n = recv(s, buf, sizeof(buf), 0);
+		//memset(buf, 0, sizeof(buf)); 
+		//int n = recv(s, buf, sizeof(buf), 0);
 
-		if (n != -1) {
+		/*if (n != -1) {
 			printfDx("%d, %s\n", n, buf);
-		}
+		}*/
 
-		DrawFormatString(0, 50, 0x33ffcc, "%d bytesReceived, \n received str: %s\n", n, buf);
+		//DrawFormatString(0, 50, 0x33ffcc, "%d bytesReceived, \n received str: %s\n", n, buf);
 		scn.lend();
 	}
 
