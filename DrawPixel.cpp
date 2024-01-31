@@ -79,10 +79,15 @@ typedef struct
 // 受信用スレッド
 unsigned int __stdcall rcvFunc(void* pvoid) {
 	rcvDataStr* pData = (rcvDataStr*)pvoid;
+	char funcbuf[32];
 	int n;
 	while (!rcvStopFlag) {
-		memset(pData->rBuf, 0, sizeof(pData->rBuf));
-		 n = recv(pData->sock, pData->rBuf, sizeof(pData->rBuf), 0);
+		memset(funcbuf, 0, sizeof(funcbuf));
+		n = recv(pData->sock, funcbuf, sizeof(funcbuf), 0);
+		if (n > 0) {
+			memset(pData->rBuf, 0, sizeof(pData->rBuf));
+			memcpy(pData->rBuf, funcbuf, n);
+		}
 		 printfDx(pData->rBuf);
 		 Sleep(500);
 
@@ -154,6 +159,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			SetActiveKeyInput(InputHandle);
 
 
+			if (strcmp(String, "send foo") == 0) {
+				//send foo 
+			}
 			if (strcmp(String, "stopThread") == 0) {
 				gfStopFlag = TRUE;
 			}
@@ -170,6 +178,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		//DrawKeyInputModeString(0, 0);	// 入力モードを描画
 		DrawKeyInputString(0, 25, InputHandle); 	// 入力途中の文字列を描画
 
+		DrawFormatString(0, 100, 0xff00ff, buf);
 		//memset(buf, 0, sizeof(buf)); 
 		//int n = recv(s, buf, sizeof(buf), 0);
 
