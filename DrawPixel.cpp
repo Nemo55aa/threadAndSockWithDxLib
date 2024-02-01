@@ -69,11 +69,30 @@ unsigned int __stdcall Func(void* pvoid) {
 }
 
 
+typedef struct
+{
+	SOCKET sock;
+	char* sBuf;
+	unsigned int len;
+}sndDataStr;
+// 送信用スレッド
+unsigned int __stdcall sndFunc(void* pvoid) {
+	sndDataStr* pData = (sndDataStr*)pvoid;
+	int rtnval = 0;
+	if (pData->len > 0) {
+		rtnval = send(pData->sock, pData->sBuf, pData->len, 0);
+	}
+	//printfDx(pData->sBuf);
+	printfDx("%d byte sent.\n", rtnval);
+	_endthreadex(rtnval);        // 返す値はこの関数に渡す
+	return(0);
+}
+
 volatile BOOL rcvStopFlag;
 typedef struct
 {
-	SOCKET   sock;
-	char*    rBuf;
+	SOCKET sock;
+	char*  rBuf;
 	unsigned int len;
 }rcvDataStr;
 // 受信用スレッド
@@ -93,8 +112,7 @@ unsigned int __stdcall rcvFunc(void* pvoid) {
 
 	}
 	_endthreadex(n);        // 返す値はこの関数に渡す
-	return(0);                  // _endthreadexを書くならここへは来ない
-
+	return(0);  
 }
 // プログラムは WinMain から始まります
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -161,6 +179,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 			if (strcmp(String, "send foo") == 0) {
 				//send foo 
+				char* foostr = (char *)"foo";
+				sndDataStr		mysndData = { s, foostr, sizeof(foostr) };
+				HANDLE sndFncHd = (HANDLE)_beginthreadex(NULL, 0, sndFunc, &mysndData, 0, &threadID);
 			}
 			if (strcmp(String, "stopThread") == 0) {
 				gfStopFlag = TRUE;
